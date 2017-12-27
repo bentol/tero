@@ -106,11 +106,12 @@ func (dyn DynamoStorage) CreateRole(name string, allowedLogins []string, nodePat
 		TableName: tableName,
 		Item:      av,
 	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	return dyn.GetRoleByName(name)
 }
 
 func (dyn DynamoStorage) DeleteRole(name string) error {

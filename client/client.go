@@ -3,29 +3,27 @@ package client
 import (
 	"bytes"
 	"fmt"
-	"log"
 
 	"github.com/bentol/tele/backend"
-	"github.com/bentol/tele/role"
 	"github.com/olekukonko/tablewriter"
 )
 
-func NewRole(name, rawAllowedLogins, rawNodePatterns string) (*role.Role, error) {
+func NewRole(name, rawAllowedLogins, rawNodePatterns string) (string, error) {
 	nodePatterns, err := backend.ParseNodePatterns(rawNodePatterns)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 	allowedLogins, err := backend.ParseAllowedLogins(rawAllowedLogins)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	role, err := backend.CreateRole(name, allowedLogins, nodePatterns)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return role, nil
+	return fmt.Sprintf("Role `%s` successfully created!", role.Name), nil
 }
 
 func ListRoles() (string, error) {
@@ -40,7 +38,7 @@ func ListRoles() (string, error) {
 	}
 
 	table := tablewriter.NewWriter(result)
-	table.SetHeader([]string{"Name", "Allowed Logins", "Node"})
+	table.SetHeader([]string{"Role", "Allowed Logins", "Node"})
 
 	for _, v := range data {
 		table.Append(v)

@@ -14,11 +14,8 @@ func setup() {
 
 func TestNewRole_shouldCreateNewRole(t *testing.T) {
 	setup()
-	err := client.DeleteRole("brand_new_role")
-	if err != nil {
-		t.Error("Delete role must not fail")
-	}
-	_, err = client.NewRole("brand_new_role", "ubuntu,root,admin", "app:tome,env:production")
+	_, _ = client.DeleteRole("brand_new_role")
+	_, err := client.NewRole("brand_new_role", "ubuntu,root,admin", "app:tome,env:production")
 	if err != nil {
 		t.Error("add role failed with valid input")
 		t.Error(err)
@@ -37,17 +34,12 @@ func TestNewRole_shouldCreateNewRole(t *testing.T) {
 
 func TestNewRole_cannotCreateNewRoleThatAlreadyExists(t *testing.T) {
 	setup()
-	err := client.DeleteRole("second_role")
-	if err != nil {
-		t.Error("Delete role must not fail")
-	}
+	_, _ = client.DeleteRole("second_role")
 
 	_, _ = client.NewRole("second_role", "ubuntu,root,admin", "app:tome,env:production")
 
-	role, _ := client.NewRole("second_role", "ubuntu,root,admin", "app:tome,env:production")
-	if role != nil {
-		t.Error("Role must not created if already exists")
-	}
+	_, err := client.NewRole("second_role", "ubuntu,root,admin", "app:tome,env:production")
+	assert.Contains(t, err.Error(), "already exists")
 }
 
 func TestDeleteRole_shouldRemoveRole(t *testing.T) {
@@ -56,7 +48,7 @@ func TestDeleteRole_shouldRemoveRole(t *testing.T) {
 	client.DeleteRole("existed_role")
 	role, _ := backend.GetRoleByName("existed_role")
 	if role != nil {
-		t.Error("Role must deleted")
+		t.Error("Role should not exist after deleted")
 	}
 }
 

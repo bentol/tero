@@ -37,7 +37,8 @@ func checkStorage() {
 
 func GetRoles() ([]role.Role, error) {
 	checkStorage()
-	return storage.GetRoles()
+	roles, err := storage.GetRoles()
+	return roles, err
 }
 
 func DeleteRole(name string) error {
@@ -56,7 +57,7 @@ func CreateRole(name string, allowedLogins []string, nodePatterns map[string]str
 	// make sure role not exists
 	existedRole, _ := storage.GetRoleByName(name)
 	if existedRole != nil {
-		return nil, errors.New(fmt.Sprintf("Role `%s` already exists", name))
+		return nil, fmt.Errorf("Role `%s` already exists", name)
 	}
 
 	return storage.CreateRole(name, allowedLogins, nodePatterns)
