@@ -1,10 +1,22 @@
 package backend
 
 import (
+	"math/rand"
+	"strconv"
 	"testing"
 
 	"github.com/bentol/tele/backend"
+	"github.com/bentol/tele/client"
+	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	setup()
+}
+
+func setup() {
+	backend.InitBackend("dynamodb")
+}
 
 func TestParseNodePatterns_should_parse_properly(t *testing.T) {
 	input := "app:tome,env:production"
@@ -43,4 +55,21 @@ func TestParseAllowedLogins(t *testing.T) {
 		t.Errorf("Failed to to parse logins")
 		t.Errorf("input: %s, result: %s", input, ret)
 	}
+}
+
+func TestGetUsersByRole_shouldReturnItsUser(t *testing.T) {
+	roleName := "test-role-" + strconv.Itoa(rand.Int())
+	_, _ = client.NewRole(roleName, "ubuntu", "env:production")
+
+	users, _ := backend.GetUsersByRole(roleName)
+	assert.Equal(t, len(users), 0)
+
+	backend.AttachRole(roleName, []string{"beni", "hulk"})
+	users, _ = backend.GetUsersByRole(roleName)
+	assert.Equal(t, len(users), 2)
+
+	_, _ = backend.DettachRole(roleName, []string{"hulk"})
+	users, _ = backend.GetUsersByRole(roleName)
+	assert.Equal(t, len(users), 1)
+	assert.Equal(t, users[0].Name, "beni")
 }

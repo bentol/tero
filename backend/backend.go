@@ -8,6 +8,7 @@ import (
 
 	"github.com/bentol/tele/backend/dynamo"
 	"github.com/bentol/tele/role"
+	"github.com/bentol/tele/user"
 )
 
 var (
@@ -19,7 +20,11 @@ type Storage interface {
 	GetRoleByName(name string) (*role.Role, error)
 	DeleteRole(name string) error
 	CreateRole(name string, allowedLogins []string, nodePatterns map[string]string) (*role.Role, error)
-	UpdateRole(name, allowedLogins []string, nodePatterns map[string]string) error
+	UpdateRole(name string, allowedLogins []string, nodePatterns map[string]string) (*role.Role, error)
+	AttachRole(selectedRole *role.Role, users []user.User) ([]user.User, error)
+	DetachRole(selectedRole *role.Role, users []user.User) ([]user.User, error)
+	GetUsersByNames(names []string) ([]user.User, error)
+	GetUsersByRole(name string) ([]user.User, error)
 }
 
 func InitBackend(selectedStorage string) {
@@ -51,6 +56,11 @@ func GetRoleByName(name string) (*role.Role, error) {
 	return storage.GetRoleByName(name)
 }
 
+func GetUsersByNames(names []string) ([]user.User, error) {
+	checkStorage()
+	return storage.GetUsersByNames(names)
+}
+
 func CreateRole(name string, allowedLogins []string, nodePatterns map[string]string) (*role.Role, error) {
 	checkStorage()
 
@@ -61,6 +71,61 @@ func CreateRole(name string, allowedLogins []string, nodePatterns map[string]str
 	}
 
 	return storage.CreateRole(name, allowedLogins, nodePatterns)
+}
+
+func UpdateRole(name string, allowedLogins []string, nodePatterns map[string]string) (*role.Role, error) {
+	checkStorage()
+
+	// make sure role exists
+	existedRole, _ := storage.GetRoleByName(name)
+	if existedRole == nil {
+		return nil, fmt.Errorf("Role `%s` doesn't exists", name)
+	}
+
+	return storage.UpdateRole(name, allowedLogins, nodePatterns)
+}
+
+func AttachRole(name string, users []string) ([]user.User, error) {
+	checkStorage()
+
+	role, err := storage.GetRoleByName(name)
+	if err != nil {
+		return nil, err
+	}
+	if role == nil {
+		return nil, fmt.Errorf("Role `%s` does not exist", name)
+	}
+
+	listUsers, err := storage.GetUsersByNames(users)
+	if len(users) != len(listUsers) {
+		return nil, errors.New("One or more user does not exist")
+	}
+
+	return storage.AttachRole(role, listUsers)
+}
+
+func DettachRole(name string, users []string) ([]user.User, error) {
+	checkStorage()
+
+	role, err := storage.GetRoleByName(name)
+	if err != nil {
+		return nil, err
+	}
+	if role == nil {
+		return nil, fmt.Errorf("Role `%s` does not exist", name)
+	}
+
+	listUsers, err := storage.GetUsersByNames(users)
+	if len(users) != len(listUsers) {
+		return nil, errors.New("One or more user does not exist")
+	}
+
+	return storage.DetachRole(role, listUsers)
+}
+
+func GetUsersByRole(name string) ([]user.User, error) {
+	checkStorage()
+	return storage.GetUsersByRole(name)
 }
 
 func ParseNodePatterns(rawPatterns string) (map[string]string, error) {

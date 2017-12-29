@@ -11,14 +11,31 @@ import (
 var (
 	app = kingpin.New("Tele", "Roles management for teleport.")
 
-	roles       = kingpin.Command("roles", "Manage roles")
+	roles = kingpin.Command("roles", "Manage roles")
+
+	showRole     = roles.Command("show", "Show role info")
+	showRoleName = showRole.Arg("name", "Role name").Required().String()
+
 	addRole     = roles.Command("add", "Add role")
 	addRoleName = addRole.Arg("name", "Role name").Required().String()
 	rolesUsers  = addRole.Flag("logins", "The name of user this roles allowed to use. Ex: root,ubuntu").Required().String()
 	rolesNodes  = addRole.Flag("nodes", "Node pattern this roles can login to. Ex: env:staging,app:tome").Required().String()
 
+	updateRole       = roles.Command("update", "Update role")
+	updateRoleName   = updateRole.Arg("name", "Role name").Required().String()
+	updateRolesUsers = updateRole.Flag("logins", "The name of user this roles allowed to use. Ex: root,ubuntu").Required().String()
+	updateRolesNodes = updateRole.Flag("nodes", "Node pattern this roles can login to. Ex: env:staging,app:tome").Required().String()
+
 	deleteRole      = roles.Command("delete", "Delete role")
 	deletedRoleName = deleteRole.Arg("role", "Role to be deleted").Required().String()
+
+	attachRole      = kingpin.Command("attach", "Attach role to user(s)")
+	attachRoleName  = attachRole.Arg("role", "Role name to be attached").Required().String()
+	attachRoleUsers = attachRole.Flag("users", "User to be attached. If more than user use comma separated. Ex: adi,budi").Required().String()
+
+	detachRole       = kingpin.Command("detach", "Detach role from user(s)")
+	dettachRoleName  = detachRole.Arg("role", "Role name to be detached").Required().String()
+	dettachRoleUsers = detachRole.Flag("users", "User to be detached. If more than user use comma separated. Ex: adi,budi").Required().String()
 
 	listRole = roles.Command("ls", "List all role")
 )
@@ -33,9 +50,14 @@ func init() {
 func main() {
 	switch kingpin.Parse() {
 	case "roles add":
-		fmt.Printf("&rolesUsers = %+v\n", *rolesUsers)
-		fmt.Printf("nodes = %+v\n", (*rolesNodes))
 		out, err := client.NewRole(*addRoleName, *rolesUsers, *rolesNodes)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err.Error())
+			return
+		}
+		fmt.Printf(out + "\n")
+	case "roles update":
+		out, err := client.UpdateRole(*updateRoleName, *updateRolesUsers, *updateRolesNodes)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err.Error())
 			return
@@ -54,5 +76,29 @@ func main() {
 			return
 		}
 		fmt.Printf(out + "\n")
+	case "attach":
+		out, err := client.AttachRole(*attachRoleName, *attachRoleUsers)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err.Error())
+			return
+		}
+		fmt.Printf(out + "\n")
+	case "detach":
+		out, err := client.DetachRole(*dettachRoleName, *dettachRoleUsers)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err.Error())
+			return
+		}
+		fmt.Printf(out + "\n")
+	case "roles show":
+		out, err := client.ShowRole(*showRoleName)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err.Error())
+			return
+		}
+		fmt.Printf(out + "\n")
+	default:
+		fmt.Printf("Error: Unreconized command\n")
+		return
 	}
 }

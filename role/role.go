@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/Jeffail/gabs"
 )
 
 var (
@@ -29,4 +31,12 @@ func (r *Role) StringNodePatterns() string {
 	}
 
 	return strings.Join(listNodes, ",")
+}
+
+func (r *Role) GetJSON() string {
+	jsonTemplate, _ := gabs.ParseJSON([]byte(RoleJsonTemplate))
+	jsonTemplate.SetP(r.Name, "metadata.name")
+	jsonTemplate.SetP(r.AllowedLogins, "spec.allow.logins")
+	jsonTemplate.SetP(r.NodePatterns, "spec.allow.node_labels")
+	return jsonTemplate.String()
 }

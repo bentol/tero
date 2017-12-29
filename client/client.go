@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/bentol/tele/backend"
 	"github.com/olekukonko/tablewriter"
@@ -50,7 +51,7 @@ func ListRoles() (string, error) {
 func DeleteRole(name string) (string, error) {
 	role, _ := backend.GetRoleByName(name)
 	if role == nil {
-		return "Role not exists", nil
+		return "Role doesn't exists", nil
 	}
 
 	err := backend.DeleteRole(name)
@@ -58,4 +59,85 @@ func DeleteRole(name string) (string, error) {
 		return fmt.Sprintf("Role `%s` deleted!", name), nil
 	}
 	return fmt.Sprintf("Failed to delete role: %s", err), nil
+}
+
+func UpdateRole(name, rawAllowedLogins, rawNodePatterns string) (string, error) {
+	nodePatterns, err := backend.ParseNodePatterns(rawNodePatterns)
+	if err != nil {
+		return "", err
+	}
+	allowedLogins, err := backend.ParseAllowedLogins(rawAllowedLogins)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = backend.UpdateRole(name, allowedLogins, nodePatterns)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("Role `%s` successfully updated!", name), nil
+}
+
+func AttachRole(name string, rawUsers string) (string, error) {
+	users := strings.Split(rawUsers, ",")
+	_, err := backend.AttachRole(name, users)
+
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("Role `%s` successfully attached!", name), nil
+}
+
+func DetachRole(name string, rawUsers string) (string, error) {
+	users := strings.Split(rawUsers, ",")
+	_, err := backend.DettachRole(name, users)
+
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("Role `%s` successfully detached from [%s]!", name, rawUsers), nil
+}
+
+func ShowRole(name string) (string, error) {
+	r, err := backend.GetRoleByName(name)
+	if r == nil {
+		return "", fmt.Errorf("Role `%s` does not exist", name)
+	}
+	if err != nil {
+		return "", err
+	}
+
+	users, err := backend.GetUsersByRole(r.Name)
+	if err != nil {
+		return "", err
+	}
+
+	bufferRoleInfo := new(bytes.Buffer)
+	table := tablewriter.NewWriter(bufferRoleInfo)
+	table.SetHeader([]string{"Role", "Allowed Logins", "Node"})
+
+	table.Append([]string{
+		r.Name,
+		r.StringAllowedLogins(),
+		r.StringNodePatterns(),
+	})
+	table.Render()
+
+	bufferUsersInfo := new(bytes.Buffer)
+	tableUsers := tablewriter.NewWriter(bufferUsersInfo)
+	tableUsers.SetHeader([]string{"Name", "Roles"})
+
+	for _, u := range users {
+		tableUsers.Append([]string{
+			u.Name,
+			strings.Join(u.RoleNames(), ", "),
+		})
+	}
+	tableUsers.Render()
+
+	result := "Role Info\n" + bufferRoleInfo.String() + "\n\nUsers\n" + bufferUsersInfo.String() + "\n"
+	return result, nil
 }
