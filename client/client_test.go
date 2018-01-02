@@ -178,3 +178,20 @@ func TestShowRole_shouldDisplayItsAllowedLoginsAndNodePatterns(t *testing.T) {
 
 	assert.Contains(t, out, "hulk")
 }
+
+func TestAddUser_shouldCreateAddUserSessionWithSelectedRole(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test")
+	}
+	userName := "test-user-" + strconv.Itoa(rand.Int())
+	roleName1 := "test-role-" + strconv.Itoa(rand.Int())
+	_, _ = client.NewRole(roleName1, "avengers,monster", "env:production,app:jet")
+	roleName2 := "test-role-" + strconv.Itoa(rand.Int())
+	_, _ = client.NewRole(roleName2, "hydra", "env:staging,app:bus")
+
+	client.AddUser(userName, roleName1+","+roleName2)
+	addUserToken, err := backend.GetStorage().GetAddUserTokenByUserName(userName)
+	assert.NotNil(t, addUserToken)
+	assert.Nil(t, err)
+	assert.EqualValues(t, addUserToken.GetStringRoles(), []string{roleName1, roleName2})
+}

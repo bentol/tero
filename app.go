@@ -11,6 +11,12 @@ import (
 var (
 	app = kingpin.New("Tele", "Roles management for teleport.")
 
+	users = kingpin.Command("users", "Manage users")
+
+	addUser      = users.Command("add", "Add user")
+	addUserName  = addUser.Arg("name", "User name").Required().String()
+	addUserRoles = addUser.Flag("roles", "The name roles of this user allowed to use. Ex: intern,dba").Required().String()
+
 	roles = kingpin.Command("roles", "Manage roles")
 
 	showRole     = roles.Command("show", "Show role info")
@@ -19,12 +25,12 @@ var (
 	addRole     = roles.Command("add", "Add role")
 	addRoleName = addRole.Arg("name", "Role name").Required().String()
 	rolesUsers  = addRole.Flag("logins", "The name of user this roles allowed to use. Ex: root,ubuntu").Required().String()
-	rolesNodes  = addRole.Flag("nodes", "Node pattern this roles can login to. Ex: env:staging,app:tome").Required().String()
+	rolesNodes  = addRole.Flag("nodes", "Node pattern this roles can login to. Ex: env:staging,app:postgres").Required().String()
 
 	updateRole       = roles.Command("update", "Update role")
 	updateRoleName   = updateRole.Arg("name", "Role name").Required().String()
 	updateRolesUsers = updateRole.Flag("logins", "The name of user this roles allowed to use. Ex: root,ubuntu").Required().String()
-	updateRolesNodes = updateRole.Flag("nodes", "Node pattern this roles can login to. Ex: env:staging,app:tome").Required().String()
+	updateRolesNodes = updateRole.Flag("nodes", "Node pattern this roles can login to. Ex: env:staging,app:postgres").Required().String()
 
 	deleteRole      = roles.Command("delete", "Delete role")
 	deletedRoleName = deleteRole.Arg("role", "Role to be deleted").Required().String()
@@ -92,6 +98,13 @@ func main() {
 		fmt.Printf(out + "\n")
 	case "roles show":
 		out, err := client.ShowRole(*showRoleName)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err.Error())
+			return
+		}
+		fmt.Printf(out + "\n")
+	case "users add":
+		out, err := client.AddUser(*addUserName, *addUserRoles)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err.Error())
 			return

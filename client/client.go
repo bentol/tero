@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/bentol/tele/backend"
+	"github.com/bentol/tele/tctl"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -140,4 +141,17 @@ func ShowRole(name string) (string, error) {
 
 	result := "Role Info\n" + bufferRoleInfo.String() + "\n\nUsers\n" + bufferUsersInfo.String() + "\n"
 	return result, nil
+}
+
+func AddUser(userName string, stringRoles string) (string, error) {
+	stdout, tokenString, err := tctl.CmdAddUser(userName, "")
+	if err != nil {
+		return "", err
+	}
+
+	err = backend.ConfigureNewUserToken(tokenString, strings.Split(stringRoles, ","))
+	if err != nil {
+		return "", err
+	}
+	return stdout, nil
 }

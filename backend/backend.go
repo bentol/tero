@@ -8,6 +8,7 @@ import (
 
 	"github.com/bentol/tele/backend/dynamo"
 	"github.com/bentol/tele/role"
+	"github.com/bentol/tele/token"
 	"github.com/bentol/tele/user"
 )
 
@@ -25,6 +26,10 @@ type Storage interface {
 	DetachRole(selectedRole *role.Role, users []user.User) ([]user.User, error)
 	GetUsersByNames(names []string) ([]user.User, error)
 	GetUsersByRole(name string) ([]user.User, error)
+	GetAddUserToken(token string) (*token.AddUserToken, error)
+	GetAddUserTokenByUserName(userName string) (*token.AddUserToken, error)
+	InsertItem(path, value string, ttl int64) error
+	UpdateAddUserToken(token *token.AddUserToken) error
 }
 
 func InitBackend(selectedStorage string) {
@@ -38,6 +43,10 @@ func checkStorage() {
 	if storage == nil {
 		log.Fatal("Error: Storage not initialized")
 	}
+}
+
+func GetStorage() Storage {
+	return storage
 }
 
 func GetRoles() ([]role.Role, error) {
@@ -126,6 +135,22 @@ func DettachRole(name string, users []string) ([]user.User, error) {
 func GetUsersByRole(name string) ([]user.User, error) {
 	checkStorage()
 	return storage.GetUsersByRole(name)
+}
+
+func ConfigureNewUserToken(token string, roles []string) error {
+	checkStorage()
+	addUserToken, err := storage.GetAddUserToken(token)
+	if addUserToken == nil {
+		return errors.New("Add user token not found")
+	}
+
+	addUserToken.SetRoles(roles)
+	err = storage.UpdateAddUserToken(addUserToken)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func ParseNodePatterns(rawPatterns string) (map[string]string, error) {

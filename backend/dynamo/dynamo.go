@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/bentol/tele/role"
+	"github.com/bentol/tele/token"
 	"github.com/bentol/tele/user"
 )
 
@@ -403,6 +404,137 @@ func (dyn DynamoStorage) GetUsersByNames(names []string) ([]user.User, error) {
 	}
 
 	return filteredUsers, nil
+}
+
+func (dyn DynamoStorage) GetAddUserToken(userToken string) (*token.AddUserToken, error) {
+	params_get := &dynamodb.GetItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"FullPath": {
+				S: aws.String(fmt.Sprintf("teleport/addusertokens/%s", userToken)),
+			},
+			"HashKey": {
+				S: aws.String("teleport"),
+			},
+		},
+		TableName: tableName,
+	}
+	resp, err := dyn.Svc.GetItem(params_get)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.Item) == 0 {
+		return nil, nil
+	}
+
+	addUserToken := token.AddUserToken{
+		userToken,
+		resp.Item["Value"].B,
+	}
+	return &addUserToken, nil
+}
+
+func (dyn DynamoStorage) GetAddUserTokenByUserName(searchedUserName string) (*token.AddUserToken, error) {
+	// todo: move filtering in database side
+	queryParams := &dynamodb.QueryInput{
+		TableName: tableName,
+		KeyConditions: map[string]*dynamodb.Condition{
+			"HashKey": {
+				ComparisonOperator: aws.String("EQ"),
+				AttributeValueList: []*dynamodb.AttributeValue{
+					{
+						S: aws.String("teleport"),
+					},
+				},
+			},
+			"FullPath": {
+				ComparisonOperator: aws.String("BEGINS_WITH"),
+				AttributeValueList: []*dynamodb.AttributeValue{
+					{
+						S: aws.String("teleport/addusertokens"),
+					},
+				},
+			},
+		},
+	}
+
+	resp, err := dyn.Svc.Query(queryParams)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range resp.Items {
+		json, err := gabs.ParseJSON(v["Value"].B)
+		if err != nil {
+			return nil, err
+		}
+		userName := json.Path("user.name").Data().(string)
+		if searchedUserName == userName {
+			addUsertoken := token.AddUserToken{
+				json.Path("token").Data().(string),
+				v["Value"].B,
+			}
+			return &addUsertoken, nil
+		}
+	}
+
+	return nil, nil
+}
+
+func (dyn DynamoStorage) InsertItem(path, value string, ttl int64) error {
+	svc := dyn.Svc
+
+	row := DynamoRow{
+		ttl,
+		"teleport",
+		[]byte(value),
+		fmt.Sprintf(path),
+		time.Now().UnixNano() / int64(time.Second),
+	}
+
+	av, err := dynamodbattribute.MarshalMap(row)
+	if err != nil {
+		return err
+	}
+
+	_, err = svc.PutItem(&dynamodb.PutItemInput{
+		TableName: tableName,
+		Item:      av,
+	})
+
+	return err
+}
+
+func (dyn DynamoStorage) UpdateAddUserToken(token *token.AddUserToken) error {
+	path := fmt.Sprintf("teleport/addusertokens/%s", token.Token)
+	return dyn.UpdateValue(path, token.JSON)
+}
+
+func (dyn DynamoStorage) UpdateValue(path string, value []byte) error {
+	paramsUpdate := &dynamodb.UpdateItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"FullPath": {
+				S: aws.String(path),
+			},
+			"HashKey": {
+				S: aws.String("teleport"),
+			},
+		},
+		TableName: tableName,
+		ExpressionAttributeNames: map[string]*string{
+			"#Value": aws.String("Value"),
+		},
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":v": {
+				B: []byte(value),
+			},
+		},
+		UpdateExpression: aws.String("SET #Value = :v"),
+		ReturnValues:     aws.String("ALL_NEW"),
+	}
+
+	_, err := dyn.Svc.UpdateItem(paramsUpdate)
+	return err
 }
 
 func dynItemToRole(item map[string]*dynamodb.AttributeValue) role.Role {
