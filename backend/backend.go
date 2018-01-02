@@ -6,10 +6,10 @@ import (
 	"log"
 	"strings"
 
-	"github.com/bentol/tele/backend/dynamo"
-	"github.com/bentol/tele/role"
-	"github.com/bentol/tele/token"
-	"github.com/bentol/tele/user"
+	"github.com/bentol/tero/backend/dynamo"
+	"github.com/bentol/tero/role"
+	"github.com/bentol/tero/token"
+	"github.com/bentol/tero/user"
 )
 
 var (

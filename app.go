@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/bentol/tele/backend"
-	"github.com/bentol/tele/client"
+	"github.com/bentol/tero/backend"
+	"github.com/bentol/tero/client"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 

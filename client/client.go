@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bentol/tele/backend"
-	"github.com/bentol/tele/tctl"
+	"github.com/bentol/tero/backend"
+	"github.com/bentol/tero/tctl"
 	"github.com/olekukonko/tablewriter"
 )
 

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/bentol/tele/backend"
-	"github.com/bentol/tele/client"
+	"github.com/bentol/tero/backend"
+	"github.com/bentol/tero/client"
 	"github.com/stretchr/testify/assert"
 )
 

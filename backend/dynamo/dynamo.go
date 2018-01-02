@@ -11,9 +11,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/bentol/tele/role"
-	"github.com/bentol/tele/token"
-	"github.com/bentol/tele/user"
+	"github.com/bentol/tero/role"
+	"github.com/bentol/tero/token"
+	"github.com/bentol/tero/user"
 )
 
 var (

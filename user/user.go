@@ -2,7 +2,7 @@ package user
 
 import (
 	"github.com/Jeffail/gabs"
-	"github.com/bentol/tele/role"
+	"github.com/bentol/tero/role"
 )
 
 var (
