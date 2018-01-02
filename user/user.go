@@ -22,6 +22,14 @@ func (u *User) RoleNames() []string {
 	return names
 }
 
+func (u *User) AllowedLogins() []string {
+	logins := make([]string, 0)
+	for _, r := range u.Roles {
+		logins = append(logins, r.AllowedLogins...)
+	}
+	return logins
+}
+
 func (u *User) GetJSON() string {
 	jsonTemplate, _ := gabs.ParseJSON([]byte(UserJsonTemplate))
 	jsonTemplate.SetP(u.Name, "metadata.name")

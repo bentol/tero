@@ -195,3 +195,29 @@ func TestAddUser_shouldCreateAddUserSessionWithSelectedRole(t *testing.T) {
 	assert.Nil(t, err)
 	assert.EqualValues(t, addUserToken.GetStringRoles(), []string{roleName1, roleName2})
 }
+
+func TestShowUser_shouldErrorIfUserDoesNotExist(t *testing.T) {
+	out, err := client.ShowUser("imaginary_user")
+	assert.Empty(t, out)
+	assert.Equal(t, err.Error(), fmt.Sprintf("User `%s` does not exist", "imaginary_user"))
+}
+
+func TestShowUser_shouldDisplayItsRoleAndAllowedLogins(t *testing.T) {
+	roleName1 := "test-role-" + strconv.Itoa(rand.Int())
+	roleName2 := "test-role-" + strconv.Itoa(rand.Int())
+	_, _ = client.NewRole(roleName1, "ubuntu", "env:production,app:plane")
+	_, _ = client.NewRole(roleName2, "root", "env:staging,app:ship")
+	_, _ = client.AttachRole(roleName1, "hulk")
+	_, _ = client.AttachRole(roleName2, "hulk")
+
+	out, err := client.ShowUser("hulk")
+	assert.Nil(t, err)
+	assert.Contains(t, out, "ubuntu")
+	assert.Contains(t, out, "root")
+	assert.Contains(t, out, "env:production")
+	assert.Contains(t, out, "env:staging")
+	assert.Contains(t, out, "app:plane")
+	assert.Contains(t, out, "app:ship")
+
+	assert.Contains(t, out, "hulk")
+}

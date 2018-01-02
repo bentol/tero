@@ -155,3 +155,47 @@ func AddUser(userName string, stringRoles string) (string, error) {
 	}
 	return stdout, nil
 }
+
+func ShowUser(name string) (string, error) {
+	users, err := backend.GetUsersByNames([]string{name})
+	if err != nil {
+		return "", err
+	}
+
+	if len(users) == 0 {
+		return "", fmt.Errorf("User `%s` does not exist", name)
+	}
+
+	bufferUsersInfo := new(bytes.Buffer)
+	tableUsers := tablewriter.NewWriter(bufferUsersInfo)
+	tableUsers.SetHeader([]string{"Name", "Roles"})
+	tableUsers.SetColMinWidth(1, 100)
+	tableUsers.SetAutoMergeCells(true)
+
+	user := users[0]
+	roleInfo := make([]string, 0)
+	for _, r := range user.Roles {
+		if len(r.Name) == 0 {
+			continue
+		}
+		info := r.Name + " = " + r.StringAllowedLogins() + "@" + r.StringNodePatterns()
+		roleInfo = append(roleInfo, info)
+	}
+
+	u := users[0]
+	for i, info := range roleInfo {
+		if i == 0 {
+			name = u.Name
+		} else {
+			name = ""
+		}
+		tableUsers.Append([]string{
+			name,
+			info,
+		})
+	}
+	tableUsers.Render()
+
+	result := bufferUsersInfo.String()
+	return result, nil
+}

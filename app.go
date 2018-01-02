@@ -17,6 +17,9 @@ var (
 	addUserName  = addUser.Arg("name", "User name").Required().String()
 	addUserRoles = addUser.Flag("roles", "The name roles of this user allowed to use. Ex: intern,dba").Required().String()
 
+	showUser     = users.Command("show", "Show user info")
+	showUserName = showUser.Arg("name", "User name").Required().String()
+
 	roles = kingpin.Command("roles", "Manage roles")
 
 	showRole     = roles.Command("show", "Show role info")
@@ -98,6 +101,13 @@ func main() {
 		fmt.Printf(out + "\n")
 	case "roles show":
 		out, err := client.ShowRole(*showRoleName)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err.Error())
+			return
+		}
+		fmt.Printf(out + "\n")
+	case "users show":
+		out, err := client.ShowUser(*showUserName)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err.Error())
 			return
