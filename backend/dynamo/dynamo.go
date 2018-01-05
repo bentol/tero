@@ -8,6 +8,7 @@ import (
 
 	"github.com/Jeffail/gabs"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
@@ -34,8 +35,13 @@ type DynamoRow struct {
 
 func New() DynamoStorage {
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("ap-southeast-1")},
+		Region: aws.String("localhost")},
 	)
+	sess.Config.Endpoint = aws.String("http://localhost:4567")
+	sess.Config.DisableSSL = aws.Bool(true)
+	creds := credentials.NewStaticCredentials("access_key", "secret_key", "")
+	sess.Config.Credentials = creds
+
 	if err != nil {
 		log.Fatal(err)
 	}
