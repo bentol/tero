@@ -24,12 +24,15 @@ type Storage interface {
 	UpdateRole(name string, allowedLogins []string, nodePatterns map[string]string) (*role.Role, error)
 	AttachRole(selectedRole *role.Role, users []user.User) ([]user.User, error)
 	DetachRole(selectedRole *role.Role, users []user.User) ([]user.User, error)
+	GetUsers() (map[string]user.User, error)
+	GetUserByName(name string) (*user.User, error)
 	GetUsersByNames(names []string) ([]user.User, error)
 	GetUsersByRole(name string) ([]user.User, error)
 	GetAddUserToken(token string) (*token.AddUserToken, error)
 	GetAddUserTokenByUserName(userName string) (*token.AddUserToken, error)
 	InsertItem(path, value string, ttl int64) error
 	UpdateAddUserToken(token *token.AddUserToken) error
+	SetUserLockedStatus(username string, status bool) error
 }
 
 func InitBackend(selectedStorage string) {
@@ -132,6 +135,11 @@ func DettachRole(name string, users []string) ([]user.User, error) {
 	return storage.DetachRole(role, listUsers)
 }
 
+func GetUsers() (map[string]user.User, error) {
+	checkStorage()
+	return storage.GetUsers()
+}
+
 func GetUsersByRole(name string) ([]user.User, error) {
 	checkStorage()
 	return storage.GetUsersByRole(name)
@@ -176,4 +184,12 @@ func ParseAllowedLogins(rawAllowedLogins string) ([]string, error) {
 	}
 
 	return ret, nil
+}
+
+func UnlockUser(username string) error {
+	return storage.SetUserLockedStatus(username, false)
+}
+
+func LockUser(username string) error {
+	return storage.SetUserLockedStatus(username, true)
 }

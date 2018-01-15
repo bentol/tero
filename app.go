@@ -17,6 +17,14 @@ var (
 	addUserName  = addUser.Arg("name", "User name").Required().String()
 	addUserRoles = addUser.Flag("roles", "The name roles of this user allowed to use. Ex: intern,dba").Required().String()
 
+	listUsers = users.Command("ls", "List user")
+
+	lockUser     = users.Command("lock", "Lock user")
+	lockUserName = lockUser.Arg("name", "User name").Required().String()
+
+	unlockUser     = users.Command("unlock", "Unlock user")
+	unlockUserName = unlockUser.Arg("name", "User name").Required().String()
+
 	showUser     = users.Command("show", "Show user info")
 	showUserName = showUser.Arg("name", "User name").Required().String()
 
@@ -113,8 +121,29 @@ func main() {
 			return
 		}
 		fmt.Printf(out + "\n")
+	case "users ls":
+		out, err := client.ListUser()
+		if err != nil {
+			fmt.Printf("Error: %s\n", err.Error())
+			return
+		}
+		fmt.Printf(out + "\n")
 	case "users add":
 		out, err := client.AddUser(*addUserName, *addUserRoles)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err.Error())
+			return
+		}
+		fmt.Printf(out + "\n")
+	case "users lock":
+		out, err := client.LockUser(*lockUserName)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err.Error())
+			return
+		}
+		fmt.Printf(out + "\n")
+	case "users unlock":
+		out, err := client.UnlockUser(*unlockUserName)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err.Error())
 			return

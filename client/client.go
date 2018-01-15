@@ -199,3 +199,66 @@ func ShowUser(name string) (string, error) {
 	result := bufferUsersInfo.String()
 	return result, nil
 }
+
+func ListUser() (string, error) {
+	users, err := backend.GetUsers()
+	if err != nil {
+		return "", err
+	}
+
+	bufferUsersInfo := new(bytes.Buffer)
+	tableUsers := tablewriter.NewWriter(bufferUsersInfo)
+	tableUsers.SetHeader([]string{"Name", "Locked", "Roles"})
+	tableUsers.SetColMinWidth(2, 100)
+	tableUsers.SetAutoMergeCells(true)
+	tableUsers.SetRowLine(true)
+
+	for _, user := range users {
+		roleInfo := make([]string, 0)
+		for _, r := range user.Roles {
+			if len(r.Name) == 0 {
+				continue
+			}
+			info := r.Name + " = " + r.StringAllowedLogins() + "@" + r.StringNodePatterns()
+			roleInfo = append(roleInfo, info)
+		}
+		lockedStatus := "no"
+		if user.IsLocked {
+			lockedStatus = "yes"
+		}
+
+		for _, info := range roleInfo {
+			name := user.Name
+			tableUsers.Append([]string{
+				name,
+				lockedStatus,
+				info,
+			})
+		}
+	}
+
+	tableUsers.Render()
+
+	result := bufferUsersInfo.String()
+	return result, nil
+}
+
+func LockUser(username string) (string, error) {
+	err := backend.LockUser(username)
+
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("User `%s` is locked!", username), nil
+}
+
+func UnlockUser(username string) (string, error) {
+	err := backend.UnlockUser(username)
+
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("User `%s` is unlocked!", username), nil
+}

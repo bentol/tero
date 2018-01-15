@@ -221,3 +221,42 @@ func TestShowUser_shouldDisplayItsRoleAndAllowedLogins(t *testing.T) {
 
 	assert.Contains(t, out, "hulk")
 }
+
+func TestListUser_shouldDisplayItsRoleAndAllowedLogins(t *testing.T) {
+	roleName1 := "test-role-" + strconv.Itoa(rand.Int())
+	roleName2 := "test-role-" + strconv.Itoa(rand.Int())
+	_, _ = client.NewRole(roleName1, "ubuntu", "env:production,app:plane")
+	_, _ = client.NewRole(roleName2, "root", "env:staging,app:ship")
+	_, _ = client.AttachRole(roleName1, "beni")
+	_, _ = client.AttachRole(roleName2, "hulk")
+
+	out, err := client.ListUser()
+	assert.Nil(t, err)
+	assert.Contains(t, out, "ubuntu")
+	assert.Contains(t, out, "root")
+	assert.Contains(t, out, "env:production")
+	assert.Contains(t, out, "env:staging")
+	assert.Contains(t, out, "app:plane")
+	assert.Contains(t, out, "app:ship")
+
+	assert.Contains(t, out, "beni")
+	assert.Contains(t, out, "hulk")
+}
+
+func TestLockUser_shouldMakeIsLockedTrue(t *testing.T) {
+	out, err := client.LockUser("beni")
+	assert.Nil(t, err)
+	assert.Contains(t, out, "User `beni` is locked!")
+
+	users, _ := backend.GetStorage().GetUsersByNames([]string{"beni"})
+	assert.Equal(t, users[0].IsLocked, true)
+}
+
+func TestUnlockUser_shouldMakeIsLockedFalse(t *testing.T) {
+	out, err := client.UnlockUser("beni")
+	assert.Nil(t, err)
+	assert.Contains(t, out, "User `beni` is unlocked!")
+
+	user, _ := backend.GetStorage().GetUserByName("beni")
+	assert.Equal(t, user.IsLocked, false)
+}

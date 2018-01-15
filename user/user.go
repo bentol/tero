@@ -10,8 +10,9 @@ var (
 )
 
 type User struct {
-	Name  string
-	Roles []role.Role
+	Name     string
+	Roles    []role.Role
+	IsLocked bool
 }
 
 func (u *User) RoleNames() []string {
@@ -35,5 +36,6 @@ func (u *User) GetJSON() string {
 	jsonTemplate.SetP(u.Name, "metadata.name")
 	jsonTemplate.SetP(u.RoleNames(), "spec.roles")
 	jsonTemplate.SetP([]string{"ubuntu"}, "spec.traits.logins")
+	jsonTemplate.SetP(u.IsLocked, "spec.status.is_locked")
 	return jsonTemplate.String()
 }

@@ -1,6 +1,7 @@
 package dynamo
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -362,10 +363,7 @@ func (dyn DynamoStorage) GetUsersByRole(roleName string) ([]user.User, error) {
 	return filteredUsers, nil
 }
 
-func (dyn DynamoStorage) GetUsersByNames(names []string) ([]user.User, error) {
-	filteredUsers := make([]user.User, 0)
-
-	// todo: move filtering in database side
+func (dyn DynamoStorage) GetUsers() (map[string]user.User, error) {
 	queryParams := &dynamodb.QueryInput{
 		TableName: tableName,
 		KeyConditions: map[string]*dynamodb.Condition{
@@ -389,6 +387,9 @@ func (dyn DynamoStorage) GetUsersByNames(names []string) ([]user.User, error) {
 	}
 
 	resp, err := dyn.Svc.Query(queryParams)
+	if err != nil {
+		return nil, err
+	}
 	cleanUsers := make([]map[string]*dynamodb.AttributeValue, 0)
 	for _, v := range resp.Items {
 		path := *v["FullPath"].S
@@ -398,6 +399,17 @@ func (dyn DynamoStorage) GetUsersByNames(names []string) ([]user.User, error) {
 	}
 	allRoles, _ := dyn.GetRoles()
 	allUsers := dynItemsToUsers(cleanUsers, allRoles)
+	return allUsers, nil
+}
+
+func (dyn DynamoStorage) GetUsersByNames(names []string) ([]user.User, error) {
+	// todo: move filtering in database side
+	allUsers, err := dyn.GetUsers()
+	if err != nil {
+		return nil, err
+	}
+
+	filteredUsers := make([]user.User, 0)
 
 	for _, name := range names {
 		if u, ok := allUsers[name]; ok {
@@ -410,6 +422,38 @@ func (dyn DynamoStorage) GetUsersByNames(names []string) ([]user.User, error) {
 	}
 
 	return filteredUsers, nil
+}
+
+func (dyn DynamoStorage) GetUserByName(username string) (*user.User, error) {
+	svc := dyn.Svc
+
+	params_get := &dynamodb.GetItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"FullPath": {
+				S: aws.String(fmt.Sprintf("teleport/web/users/%s/params", username)),
+			},
+			"HashKey": {
+				S: aws.String("teleport"),
+			},
+		},
+		TableName: tableName,
+	}
+	resp, err := svc.GetItem(params_get)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.Item) == 0 {
+		return nil, nil
+	}
+
+	allRoles, _ := dyn.GetRoles()
+	mappedRoles := make(map[string]role.Role)
+	for _, r := range allRoles {
+		mappedRoles[r.Name] = r
+	}
+	r := dynItemToUser(resp.Item, mappedRoles)
+	return &r, nil
 }
 
 func (dyn DynamoStorage) GetAddUserToken(userToken string) (*token.AddUserToken, error) {
@@ -543,6 +587,20 @@ func (dyn DynamoStorage) UpdateValue(path string, value []byte) error {
 	return err
 }
 
+func (dyn DynamoStorage) SetUserLockedStatus(username string, lockedStatus bool) error {
+	userObj, err := dyn.GetUserByName(username)
+	if err != nil {
+		return err
+	}
+	if userObj == nil {
+		return errors.New("User not exists")
+	}
+
+	userObj.IsLocked = lockedStatus
+	path := fmt.Sprintf("teleport/web/users/%s/params", username)
+	return dyn.UpdateValue(path, []byte(userObj.GetJSON()))
+}
+
 func dynItemToRole(item map[string]*dynamodb.AttributeValue) role.Role {
 	obj := DynamoRow{}
 	dynamodbattribute.UnmarshalMap(item, &obj)
@@ -602,8 +660,9 @@ func dynItemToUser(item map[string]*dynamodb.AttributeValue, mappedRoles map[str
 	}
 
 	u := user.User{
-		rawUser.Path("metadata.name").Data().(string),
-		roles,
+		Name:     rawUser.Path("metadata.name").Data().(string),
+		Roles:    roles,
+		IsLocked: rawUser.Path("spec.status.is_locked").Data().(bool),
 	}
 	return u
 }
