@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/bentol/tero/backend"
+	"github.com/bentol/tero/config"
+	"github.com/bentol/tero/notif"
 	"github.com/bentol/tero/tctl"
 	"github.com/olekukonko/tablewriter"
 )
@@ -143,7 +145,7 @@ func ShowRole(name string) (string, error) {
 	return result, nil
 }
 
-func AddUser(userName string, stringRoles string) (string, error) {
+func AddUser(userName, stringRoles, sendEmailTo string) (string, error) {
 	stdout, tokenString, err := tctl.CmdAddUser(userName, "")
 	if err != nil {
 		return "", err
@@ -153,6 +155,20 @@ func AddUser(userName string, stringRoles string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	// send email
+	if config.Get().EnableEmailToken {
+		if sendEmailTo == "" {
+			sendEmailTo = userName + "@tokopedia.com"
+		}
+		err = notif.SentMailNewUser(userName, sendEmailTo, tokenString)
+		if err != nil {
+			return "", err
+		}
+
+		stdout = stdout + fmt.Sprintf("\r\n\r\nEmail sent to: %s", sendEmailTo)
+	}
+
 	return stdout, nil
 }
 

@@ -2,20 +2,27 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
 
+	"github.com/BurntSushi/toml"
 	"github.com/bentol/tero/backend"
 	"github.com/bentol/tero/client"
+	"github.com/bentol/tero/config"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
+
+const configfile = "/etc/tero.toml"
 
 var (
 	app = kingpin.New("Tele", "Roles management for teleport.")
 
 	users = kingpin.Command("users", "Manage users")
 
-	addUser      = users.Command("add", "Add user")
-	addUserName  = addUser.Arg("name", "User name").Required().String()
-	addUserRoles = addUser.Flag("roles", "The name roles of this user allowed to use. Ex: intern,dba").Required().String()
+	addUser        = users.Command("add", "Add user")
+	addUserName    = addUser.Arg("name", "User name").Required().String()
+	addUserRoles   = addUser.Flag("roles", "The name roles of this user allowed to use. Ex: intern,dba").Required().String()
+	addUserEmailTo = addUser.Flag("email", "Send registration token to, default: <username>@tokopedia.com").String()
 
 	listUsers = users.Command("ls", "List user")
 
@@ -62,6 +69,19 @@ func init() {
 
 	selectedStorage := "dynamodb"
 	backend.InitBackend(selectedStorage)
+
+	// read config
+	_, err := os.Stat(configfile)
+	if err != nil {
+		log.Fatal("Config file is missing: ", configfile)
+	}
+
+	var conf config.Config
+	if _, err := toml.DecodeFile(configfile, &conf); err != nil {
+		log.Fatal(err)
+	}
+
+	config.Set(conf)
 }
 
 func main() {
@@ -129,7 +149,7 @@ func main() {
 		}
 		fmt.Printf(out + "\n")
 	case "users add":
-		out, err := client.AddUser(*addUserName, *addUserRoles)
+		out, err := client.AddUser(*addUserName, *addUserRoles, *addUserEmailTo)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err.Error())
 			return
