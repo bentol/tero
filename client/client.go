@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -146,6 +147,12 @@ func ShowRole(name string) (string, error) {
 }
 
 func AddUser(userName, stringRoles, sendEmailTo string) (string, error) {
+	// make sure user not exist
+	results, _ := backend.GetUsersByNames([]string{userName})
+	if len(results) != 0 {
+		return "", errors.New(fmt.Sprintf("User `%s` already exist", userName))
+	}
+
 	stdout, tokenString, err := tctl.CmdAddUser(userName, "")
 	if err != nil {
 		return "", err
@@ -277,4 +284,18 @@ func UnlockUser(username string) (string, error) {
 	}
 
 	return fmt.Sprintf("User `%s` is unlocked!", username), nil
+}
+
+func DeleteUser(userName string) (string, error) {
+	// make sure user not exist
+	results, _ := backend.GetUsersByNames([]string{userName})
+	if len(results) == 0 {
+		return "", errors.New(fmt.Sprintf("User `%s` not exist", userName))
+	}
+
+	_, err := tctl.CmdDeleteUser(userName)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("User `%s` deleted!", userName), nil
 }

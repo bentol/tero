@@ -179,6 +179,17 @@ func TestShowRole_shouldDisplayItsAllowedLoginsAndNodePatterns(t *testing.T) {
 	assert.Contains(t, out, "hulk")
 }
 
+func TestAddUser_shouldErrorIfUserAlreadyExist(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test")
+	}
+	roleName1 := "test-role-" + strconv.Itoa(rand.Int())
+	_, _ = client.NewRole(roleName1, "avengers,monster", "env:production,app:jet")
+	out, err := client.AddUser("beni", roleName1, "test@example.com")
+	assert.Equal(t, err.Error(), "User `beni` already exist")
+	assert.Equal(t, out, "")
+}
+
 func TestAddUser_shouldCreateAddUserSessionWithSelectedRole(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test")
@@ -189,7 +200,7 @@ func TestAddUser_shouldCreateAddUserSessionWithSelectedRole(t *testing.T) {
 	roleName2 := "test-role-" + strconv.Itoa(rand.Int())
 	_, _ = client.NewRole(roleName2, "hydra", "env:staging,app:bus")
 
-	client.AddUser(userName, roleName1+","+roleName2)
+	client.AddUser(userName, roleName1+","+roleName2, "test@example.com")
 	addUserToken, err := backend.GetStorage().GetAddUserTokenByUserName(userName)
 	assert.NotNil(t, addUserToken)
 	assert.Nil(t, err)

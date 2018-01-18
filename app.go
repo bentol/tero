@@ -32,6 +32,9 @@ var (
 	unlockUser     = users.Command("unlock", "Unlock user")
 	unlockUserName = unlockUser.Arg("name", "User name").Required().String()
 
+	deleteUser     = users.Command("delete", "Delete user")
+	deleteUserName = deleteUser.Arg("name", "User name").Required().String()
+
 	showUser     = users.Command("show", "Show user info")
 	showUserName = showUser.Arg("name", "User name").Required().String()
 
@@ -164,6 +167,13 @@ func main() {
 		fmt.Printf(out + "\n")
 	case "users unlock":
 		out, err := client.UnlockUser(*unlockUserName)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err.Error())
+			return
+		}
+		fmt.Printf(out + "\n")
+	case "users delete":
+		out, err := client.DeleteUser(*deleteUserName)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err.Error())
 			return
