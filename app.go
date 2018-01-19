@@ -177,7 +177,7 @@ func main() {
 		}
 		fmt.Printf(out + "\n")
 	case "users delete":
-		fmt.Print("This command will reset user.\nAre you sure ? ")
+		fmt.Print("This command will delete user.\nAre you sure ? ")
 		if askForConfirmation() != true {
 			return
 		}
