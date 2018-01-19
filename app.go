@@ -35,6 +35,10 @@ var (
 	deleteUser     = users.Command("delete", "Delete user")
 	deleteUserName = deleteUser.Arg("name", "User name").Required().String()
 
+	resetUser        = users.Command("reset", "Reset user (delete it, then send registration link again)")
+	resetUserName    = resetUser.Arg("name", "User name").Required().String()
+	resetUserEmailTo = resetUser.Flag("email", "Send registration token to, default: <username>@tokopedia.com").String()
+
 	showUser     = users.Command("show", "Show user info")
 	showUserName = showUser.Arg("name", "User name").Required().String()
 
@@ -173,7 +177,22 @@ func main() {
 		}
 		fmt.Printf(out + "\n")
 	case "users delete":
+		fmt.Print("This command will reset user.\nAre you sure ? ")
+		if askForConfirmation() != true {
+			return
+		}
 		out, err := client.DeleteUser(*deleteUserName)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err.Error())
+			return
+		}
+		fmt.Printf(out + "\n")
+	case "users reset":
+		fmt.Print("This command will reset user.\nAre you sure ? ")
+		if askForConfirmation() != true {
+			return
+		}
+		out, err := client.ResetUser(*resetUserName, *resetUserEmailTo)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err.Error())
 			return
@@ -183,4 +202,35 @@ func main() {
 		fmt.Printf("Error: Unreconized command\n")
 		return
 	}
+}
+
+func askForConfirmation() bool {
+	var response string
+	_, err := fmt.Scanln(&response)
+	if err != nil {
+		log.Fatal(err)
+	}
+	okayResponses := []string{"y", "Y", "yes", "Yes", "YES"}
+	nokayResponses := []string{"n", "N", "no", "No", "NO"}
+	if containsString(okayResponses, response) {
+		return true
+	} else if containsString(nokayResponses, response) {
+		return false
+	} else {
+		fmt.Println("Please type yes or no and then press enter:")
+		return askForConfirmation()
+	}
+}
+
+func posString(slice []string, element string) int {
+	for index, elem := range slice {
+		if elem == element {
+			return index
+		}
+	}
+	return -1
+}
+
+func containsString(slice []string, element string) bool {
+	return !(posString(slice, element) == -1)
 }
