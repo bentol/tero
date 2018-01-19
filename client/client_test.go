@@ -271,3 +271,9 @@ func TestUnlockUser_shouldMakeIsLockedFalse(t *testing.T) {
 	user, _ := backend.GetStorage().GetUserByName("beni")
 	assert.Equal(t, user.IsLocked, false)
 }
+
+func TestResetUser_shouldErrorIfUserNotExist(t *testing.T) {
+	out, err := client.ResetUser("imaginary_user", "")
+	assert.Equal(t, out, "")
+	assert.Contains(t, err.Error(), "user `imaginary_user` not exist")
+}

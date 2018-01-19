@@ -299,3 +299,19 @@ func DeleteUser(userName string) (string, error) {
 	}
 	return fmt.Sprintf("User `%s` deleted!", userName), nil
 }
+
+func ResetUser(userName, sendEmailTo string) (string, error) {
+	results, _ := backend.GetUsersByNames([]string{userName})
+	if len(results) == 0 {
+		return "", fmt.Errorf("user `%s` not exist", userName)
+	}
+
+	_, err := DeleteUser(userName)
+	if err != nil {
+		return "", err
+	}
+
+	userObj := results[0]
+	roles := strings.Join(userObj.RoleNames(), ",")
+	return AddUser(userName, roles, sendEmailTo)
+}
